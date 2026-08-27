@@ -42,8 +42,13 @@ Track progress with [`SETUP.md`](SETUP.md) — the same steps below, as a checkl
 2. **Telegram bot**: [@BotFather](https://t.me/BotFather) → `/newbot` → copy the token.
    Message your bot once, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` to
    read your chat id from the JSON.
-3. **Google Cloud**: enable the Gmail API + Calendar API, create an OAuth client
-   (Activepieces shows you the exact redirect URI when you add the connection).
+3. **Google account access**:
+   - **Cloud**: skip straight to step 4 — Activepieces Cloud has its own pre-registered
+     Google OAuth app, so adding the Gmail/Calendar connections just pops up a normal
+     Google sign-in window. No Google Cloud Console needed.
+   - **Self-hosted**: you bring your own OAuth client — enable the Gmail API + Calendar
+     API in a Google Cloud project, then create an OAuth client using the redirect URI
+     Activepieces shows you when you add the connection.
 4. **Connections** (Activepieces UI → Connections): add Gmail, Google Calendar, Telegram
    Bot, and OpenAI.
 5. **Build the flows** in the visual editor, matching the diagrams above:

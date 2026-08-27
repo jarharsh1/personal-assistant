@@ -33,6 +33,8 @@ your calendar.
 
 ## Setup
 
+Track progress with [`SETUP.md`](SETUP.md) — the same steps below, as a checklist.
+
 1. **Start it**: `cp .env.example .env && docker compose up -d` → open `localhost:8080`,
    create your admin account.
 2. **Telegram bot**: [@BotFather](https://t.me/BotFather) → `/newbot` → copy the token.

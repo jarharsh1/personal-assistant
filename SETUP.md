@@ -44,12 +44,12 @@ Pick one:
 
 - [x] Telegram bot created via [@BotFather](https://t.me/BotFather), token saved
 - [x] Your chat id read from `https://api.telegram.org/bot<TOKEN>/getUpdates`
-- [ ] Google Cloud OAuth client created — **self-hosted only**; skip on Cloud (its own
-      Google OAuth app handles this via a sign-in popup)
+- [x] ~~Google Cloud OAuth client created~~ — N/A on Cloud (its own Google OAuth app
+      handles this via a sign-in popup); self-hosted only
 - [x] Gmail connection added in Activepieces
 - [x] Google Calendar connection added
-- [ ] Telegram Bot connection added
-- [ ] OpenAI connection added
+- [x] Telegram Bot connection added
+- [x] OpenAI connection added
 
 ## 3. Email flow
 

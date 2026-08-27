@@ -53,11 +53,14 @@ Pick one:
 
 ## 3. Email flow
 
-- [ ] Gmail trigger (new email, unread only)
-- [ ] OpenAI action (summarize prompt from README)
-- [ ] Telegram send action
-- [ ] Flow turned **On**
-- [ ] Tested: emailed myself → got a Telegram message
+- [x] Gmail trigger (new email, unread only)
+- [x] OpenAI action (summarize prompt from README)
+- [x] Code action (formats message, escapes HTML, builds Gmail link) — **must come
+      after** the OpenAI step, not before
+- [x] Telegram send action — Parse Mode `HTML`, Message = Code step's `message` output
+      only
+- [x] Flow **Published** and turned **On**
+- [x] Tested: emailed myself → got a clean, formatted Telegram message
 
 ## 4. Meeting flow
 

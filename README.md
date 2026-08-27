@@ -12,7 +12,7 @@ container).
 
 | Flow | Trigger | Steps |
 |---|---|---|
-| **Email** | New unread Gmail | Gmail trigger → OpenAI (summarize) → Telegram send |
+| **Email** | New unread Gmail | Gmail trigger → OpenAI (summarize) → Code (format + escape) → Telegram send |
 | **Meetings** | Every 5 min | Schedule → Get Calendar events (next 20 min) → Loop + Storage dedup → Telegram send |
 
 ## Ask on demand (optional)
@@ -53,16 +53,56 @@ Track progress with [`SETUP.md`](SETUP.md) — the same steps below, as a checkl
    Bot, and OpenAI.
 5. **Build the flows** in the visual editor, matching the diagrams above:
 
-   **Email** — Gmail trigger (new email, unread) → OpenAI action → Telegram send:
-   ```
-   System: You write a single, concrete one-sentence summary of an email for a push
-   notification. State the key fact or ask directly - no greeting, no preamble, no
-   quotation marks, no "this email is about".
-   User:   Subject: {{subject}}
-           From: {{from}}
+   **Email** — 4 steps, in this exact order (order matters — a step can only use data
+   from steps *before* it):
 
-           {{body}}
-   ```
+   1. **Gmail trigger**: New Email, unread only.
+   2. **OpenAI action** (model `gpt-4o-mini`), single "Question" field combining the
+      instruction and the trigger's Subject/From/Body:
+      ```
+      You write a single, concrete one-sentence summary of an email for a push
+      notification. State the key fact or ask directly - no greeting, no preamble, no
+      quotation marks, no "this email is about".
+
+      Subject: {{subject}}
+      From: {{from}}
+
+      {{body}}
+      ```
+   3. **Code action** — builds the final message and escapes HTML-unsafe characters, so
+      raw email content (which can contain anything) never breaks the send step. Inputs:
+      `from` and `subject` (Gmail trigger fields), `messageId` (Gmail trigger's Message
+      ID), `summary` (the OpenAI step's result):
+      ```javascript
+      export const code = async (inputs) => {
+        const esc = (s) => String(s ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+
+        const gmailLink = inputs.messageId
+          ? `https://mail.google.com/mail/u/0/#inbox/${inputs.messageId}`
+          : null;
+
+        let message = `📧 <b>New Email</b>\n`;
+        message += `<b>From:</b> ${esc(inputs.from)}\n`;
+        message += `<b>Subject:</b> ${esc(inputs.subject)}\n\n`;
+        message += esc(inputs.summary);
+        if (gmailLink) message += `\n\n<a href="${gmailLink}">Open in Gmail</a>`;
+
+        return { message };
+      };
+      ```
+   4. **Telegram send** — Parse Mode **`HTML`**, Message field = *only* the Code step's
+      `message` output (a single inserted variable, nothing else typed around it).
+
+   **Why not simpler?** Telegram's `MarkdownV2` parse mode looks tempting for bold text,
+   but it requires escaping ~20 reserved characters (`. - ( ) ! ...`) in *any* dynamic
+   text — and email subjects/bodies can contain literally anything, so it breaks
+   constantly. `HTML` mode only reserves `& < >`, which the Code step escapes safely.
+   Skipping the Code step and building the message directly in the Telegram field works
+   too, but then you're back to plain, unformatted text with no safe way to add bold or
+   a link.
 
    **Meetings** — Schedule (5 min) → Get Calendar events (next 20 min) → Loop over
    events → inside the loop: Storage *Get*(event id) → skip if already set → Telegram

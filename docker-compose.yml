@@ -9,6 +9,7 @@ services:
       - AP_DB_TYPE=PGLITE
       - AP_REDIS_TYPE=MEMORY
       - AP_FRONTEND_URL=${AP_FRONTEND_URL:-http://localhost:8080}
+      - AP_WORKER_TOKEN=${AP_WORKER_TOKEN}
     volumes:
       - activepieces_data:/root/.activepieces
 

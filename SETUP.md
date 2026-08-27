@@ -32,8 +32,8 @@ For each segment:
 Pick one:
 
 **Cloud** (no install, no commands — use this if you can't run Docker on your machine):
-- [ ] Signed up at [cloud.activepieces.com](https://cloud.activepieces.com)
-- [ ] Confirmed the dashboard loads, Connections and Flows are reachable
+- [x] Signed up at [cloud.activepieces.com](https://cloud.activepieces.com)
+- [x] Confirmed the dashboard loads, Connections and Flows are reachable
 
 **Self-hosted** (needs a machine where you can run Docker commands):
 - [ ] `cp .env.example .env`, `AP_WORKER_TOKEN` filled in

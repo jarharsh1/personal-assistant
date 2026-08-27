@@ -20,7 +20,7 @@ For each segment:
 
 | Segment | Branch | Issue |
 |---|---|---|
-| 1. Infra | `segment/1-infra` | [#2](https://github.com/jarharsh1/personal-assistant/issues/2) |
+| 1. Infra | `segment/1-infra-cloud` | [#2](https://github.com/jarharsh1/personal-assistant/issues/2) |
 | 2. Credentials | `segment/2-credentials` | [#3](https://github.com/jarharsh1/personal-assistant/issues/3) |
 | 3. Email flow | `segment/3-email-flow` | [#4](https://github.com/jarharsh1/personal-assistant/issues/4) |
 | 4. Meeting flow | `segment/4-meeting-flow` | [#5](https://github.com/jarharsh1/personal-assistant/issues/5) |
@@ -29,7 +29,14 @@ For each segment:
 
 ## 1. Infra
 
-- [ ] `cp .env.example .env`
+Pick one:
+
+**Cloud** (no install, no commands — use this if you can't run Docker on your machine):
+- [ ] Signed up at [cloud.activepieces.com](https://cloud.activepieces.com)
+- [ ] Confirmed the dashboard loads, Connections and Flows are reachable
+
+**Self-hosted** (needs a machine where you can run Docker commands):
+- [ ] `cp .env.example .env`, `AP_WORKER_TOKEN` filled in
 - [ ] `docker compose up -d`
 - [ ] Open `localhost:8080`, create your admin account
 

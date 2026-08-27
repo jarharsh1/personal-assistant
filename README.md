@@ -1,9 +1,10 @@
 # Personal Assistant
 
-Self-hosted automation (no app, no server code) that watches Gmail and Google Calendar,
-summarizes with OpenAI, and notifies you on Telegram — plus an optional flow that
-answers questions on demand. Built on [Activepieces](https://www.activepieces.com)
-(MIT-licensed, free to self-host), single Docker container.
+Automation (no app, no server code) that watches Gmail and Google Calendar, summarizes
+with OpenAI, and notifies you on Telegram — plus an optional flow that answers questions
+on demand. Built on [Activepieces](https://www.activepieces.com), either as a hosted
+account (no install, nothing to run) or self-hosted (MIT-licensed, single Docker
+container).
 
 ## Architecture
 
@@ -26,7 +27,7 @@ your calendar.
 
 | Piece | Used for |
 |---|---|
-| [Activepieces](https://www.activepieces.com), self-hosted | Runs all flows, single container, no Postgres/Redis needed |
+| [Activepieces](https://www.activepieces.com) | Runs all flows — cloud account or self-hosted single container |
 | Gmail + Google Calendar (OAuth2, read-only) | Trigger + data source |
 | Telegram Bot API | Notifications + the ask-on-demand channel |
 | OpenAI (`gpt-4o-mini`) | Email summaries and Q&A answers |
@@ -35,8 +36,9 @@ your calendar.
 
 Track progress with [`SETUP.md`](SETUP.md) — the same steps below, as a checklist.
 
-1. **Start it**: `cp .env.example .env && docker compose up -d` → open `localhost:8080`,
-   create your admin account.
+1. **Start it** — pick one:
+   - **Cloud (no install, no commands)**: sign up at [cloud.activepieces.com](https://cloud.activepieces.com). Free tier covers several active flows, which is all this needs.
+   - **Self-hosted (needs a machine where you can run Docker commands)**: `cp .env.example .env && docker compose up -d` → open `localhost:8080`, create your admin account.
 2. **Telegram bot**: [@BotFather](https://t.me/BotFather) → `/newbot` → copy the token.
    Message your bot once, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` to
    read your chat id from the JSON.
@@ -71,7 +73,8 @@ Track progress with [`SETUP.md`](SETUP.md) — the same steps below, as a checkl
 ## Notes
 
 - Secrets (OAuth tokens, bot token, API key) live only in Activepieces' encrypted
-  Connections store — never in `.env` or git.
+  Connections store — never in `.env` or git. On the cloud plan that store is hosted by
+  Activepieces; self-hosted, it's in your own `activepieces_data` Docker volume.
 - Meeting source is Google Calendar, not the Zoom API directly — covers most Zoom
   invites since they carry a join link as a calendar event. Swap in a direct Zoom API
   call if some of yours don't land on your calendar.

@@ -35,8 +35,8 @@ For each segment:
 
 ## 2. Credentials
 
-- [ ] Telegram bot created via [@BotFather](https://t.me/BotFather), token saved
-- [ ] Your chat id read from `https://api.telegram.org/bot<TOKEN>/getUpdates`
+- [x] Telegram bot created via [@BotFather](https://t.me/BotFather), token saved
+- [x] Your chat id read from `https://api.telegram.org/bot<TOKEN>/getUpdates`
 - [ ] Gmail API + Calendar API enabled in Google Cloud, OAuth client created
 - [ ] Connections added in Activepieces: Gmail, Google Calendar, Telegram Bot, OpenAI
 

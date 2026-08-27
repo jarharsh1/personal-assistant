@@ -47,7 +47,7 @@ Pick one:
 - [ ] Google Cloud OAuth client created — **self-hosted only**; skip on Cloud (its own
       Google OAuth app handles this via a sign-in popup)
 - [x] Gmail connection added in Activepieces
-- [ ] Google Calendar connection added
+- [x] Google Calendar connection added
 - [ ] Telegram Bot connection added
 - [ ] OpenAI connection added
 

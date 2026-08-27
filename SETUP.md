@@ -1,7 +1,31 @@
 # Setup Checklist
 
 Six segments, in order. Each is independently testable before moving to the next —
-details and prompts for each are in the [README](./README.md).
+details and prompts for each are in the [README](./README.md). Each segment also has a
+[GitHub issue](https://github.com/jarharsh1/personal-assistant/issues/1) with the same
+checklist — closing it (see workflow below) ticks the tracking issue's progress bar
+automatically, no manual bookkeeping needed.
+
+## Workflow
+
+For each segment:
+
+1. `git checkout main && git pull origin main`
+2. `git checkout -b segment/<n>-<slug>` (e.g. `segment/1-infra`)
+3. Do the work, commit
+4. `git push -u origin segment/<n>-<slug>`
+5. Open a PR into `main`. In the PR description, include `Closes #<issue-number>` (see
+   table below) so merging auto-closes that segment's issue.
+6. Merge the PR, then `git pull origin main` before starting the next segment.
+
+| Segment | Branch | Issue |
+|---|---|---|
+| 1. Infra | `segment/1-infra` | [#2](https://github.com/jarharsh1/personal-assistant/issues/2) |
+| 2. Credentials | `segment/2-credentials` | [#3](https://github.com/jarharsh1/personal-assistant/issues/3) |
+| 3. Email flow | `segment/3-email-flow` | [#4](https://github.com/jarharsh1/personal-assistant/issues/4) |
+| 4. Meeting flow | `segment/4-meeting-flow` | [#5](https://github.com/jarharsh1/personal-assistant/issues/5) |
+| 5. Ask-on-demand flow | `segment/5-ask-flow` | [#6](https://github.com/jarharsh1/personal-assistant/issues/6) |
+| 6. Test & verify | `segment/6-verify` | [#7](https://github.com/jarharsh1/personal-assistant/issues/7) |
 
 ## 1. Infra
 

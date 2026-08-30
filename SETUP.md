@@ -54,13 +54,21 @@ Pick one:
 ## 3. Email flow
 
 - [x] Gmail trigger (new email, unread only)
-- [x] OpenAI action (summarize prompt from README)
-- [x] Code action (formats message, escapes HTML, builds Gmail link) — **must come
-      after** the OpenAI step, not before
-- [x] Telegram send action — Parse Mode `HTML`, Message = Code step's `message` output
-      only
+- [x] OpenAI action (classification prompt from README) — **must come before** the Code
+      step, not after
+- [x] Code action (parses classification JSON, formats message, builds full Telegram
+      `sendMessage` request body incl. buttons)
+- [x] Custom API Call action (`POST /sendMessage`, `Content-Type: application/json`,
+      Body = Code step's `requestBody`) — replaces the packaged "Send Text Message"
+      action, whose Reply Markup field doesn't actually forward buttons in this piece
+      version
+- [ ] Old "Send Text Message" step removed (was sending a duplicate message per email)
 - [x] Flow **Published** and turned **On**
-- [x] Tested: emailed myself → got a clean, formatted Telegram message
+- [x] Tested: emailed myself → got a categorized, formatted Telegram message with
+      working "Open Email" / "Remind Me" / "Mark Done" buttons (currently arriving
+      alongside a duplicate plain message — see item above)
+- [ ] "Remind Me" / "Mark Done" buttons actually **do** something when tapped — not yet;
+      needs a second flow (see README Notes)
 
 ## 4. Meeting flow
 

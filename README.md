@@ -12,7 +12,7 @@ container).
 
 | Flow | Trigger | Steps |
 |---|---|---|
-| **Email** | New unread Gmail | Gmail trigger → OpenAI (summarize) → Code (format + escape) → Telegram send |
+| **Email** | New unread Gmail | Gmail trigger → OpenAI (classify) → Code (format + build request) → Custom API Call (Telegram `sendMessage`, with buttons) |
 | **Meetings** | Every 5 min | Schedule → Get Calendar events (next 20 min) → Loop + Storage dedup → Telegram send |
 
 ## Ask on demand (optional)
@@ -57,22 +57,31 @@ Track progress with [`SETUP.md`](SETUP.md) — the same steps below, as a checkl
    from steps *before* it):
 
    1. **Gmail trigger**: New Email, unread only.
-   2. **OpenAI action** (model `gpt-4o-mini`), single "Question" field combining the
-      instruction and the trigger's Subject/From/Body:
+   2. **OpenAI action** (model `gpt-4o-mini`) — classifies the email and extracts
+      structured fields instead of writing a generic sentence. Single "Question" field:
       ```
-      You write a single, concrete one-sentence summary of an email for a push
-      notification. State the key fact or ask directly - no greeting, no preamble, no
-      quotation marks, no "this email is about".
+      You triage an email for a push notification. Read it and respond with ONLY a JSON object — no markdown, no code fences, no explanation — matching exactly this shape:
+      {"category":"action_required|calendar|fyi|digest_low_priority","title":"...","org":"...","summary":"...","action":"..."}
 
+      Rules:
+      - category: "action_required" if the sender wants you to do something (upload, pay, respond, approve, sign, complete). "calendar" if it's a meeting/event invite. "digest_low_priority" if it's promotional/marketing/newsletter content. "fyi" for anything else purely informational.
+      - title: a short, specific, human title — do not just copy the subject line.
+      - org: the sender's organization or person name, cleaned up, no email address.
+      - summary: one concrete, specific sentence stating the actual content or ask.
+      - action: if category is action_required, a short imperative next step. Otherwise an empty string.
+
+      Email:
       Subject: {{subject}}
       From: {{from}}
 
       {{body}}
       ```
-   3. **Code action** — builds the final message and escapes HTML-unsafe characters, so
-      raw email content (which can contain anything) never breaks the send step. Inputs:
-      `from` and `subject` (Gmail trigger fields), `messageId` (Gmail trigger's Message
-      ID), `summary` (the OpenAI step's result):
+   3. **Code action** — parses that JSON (falling back to plain text if the model ever
+      returns something unparseable), renders a category-coded message (emoji + caps
+      label + bold title + org + summary + action), and builds the **entire Telegram API
+      request body** as one JSON string — including a 3-button inline keyboard (Open
+      Email / Remind Me / Mark Done). Inputs: `from`, `subject`, `messageId` (Gmail
+      trigger fields), `summary` (the OpenAI step's raw JSON output):
       ```javascript
       export const code = async (inputs) => {
         const esc = (s) => String(s ?? '')
@@ -80,29 +89,81 @@ Track progress with [`SETUP.md`](SETUP.md) — the same steps below, as a checkl
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
 
-        const gmailLink = inputs.messageId
-          ? `https://mail.google.com/mail/u/0/#inbox/${inputs.messageId}`
+        const rawId = String(inputs.messageId ?? '').replace(/[<>]/g, '');
+        const gmailLink = rawId
+          ? `https://mail.google.com/mail/u/0/#search/rfc822msgid%3A${encodeURIComponent(rawId)}`
           : null;
 
-        let message = `📧 <b>New Email</b>\n`;
-        message += `<b>From:</b> ${esc(inputs.from)}\n`;
-        message += `<b>Subject:</b> ${esc(inputs.subject)}\n\n`;
-        message += esc(inputs.summary);
+        let data;
+        try {
+          const cleaned = String(inputs.summary ?? '')
+            .replace(/```json/gi, '')
+            .replace(/```/g, '')
+            .trim();
+          data = JSON.parse(cleaned);
+        } catch (e) {
+          data = null;
+        }
+
+        if (!data || !data.summary) {
+          data = {
+            category: 'fyi',
+            title: inputs.subject,
+            org: inputs.from,
+            summary: String(inputs.summary ?? '').trim() || '(no summary available)',
+            action: ''
+          };
+        }
+
+        const headers = {
+          action_required: ['⚠️', 'ACTION REQUIRED'],
+          calendar: ['📅', 'CALENDAR'],
+          digest_low_priority: ['📥', 'LOW PRIORITY'],
+          fyi: ['✉️', 'NEW EMAIL'],
+        };
+        const [icon, label] = headers[data.category] || headers.fyi;
+
+        let message = `${icon} <b>${label}</b>\n`;
+        message += `<b>${esc(data.title || inputs.subject)}</b>\n`;
+        message += `${esc(data.org || inputs.from)}\n\n`;
+        message += esc(data.summary);
+        if (data.action) message += `\n\n⏰ <b>Next:</b> ${esc(data.action)}`;
         if (gmailLink) message += `\n\n<a href="${gmailLink}">Open in Gmail</a>`;
 
-        return { message };
+        const shortId = rawId.slice(0, 50);
+        const buttons = [[{ text: '📧 Open Email', url: gmailLink || 'https://mail.google.com' }]];
+        if (shortId) {
+          buttons[0].push({ text: '⏰ Remind Me', callback_data: `remind:${shortId}` });
+          buttons[0].push({ text: '✅ Mark Done', callback_data: `done:${shortId}` });
+        }
+
+        const requestBody = JSON.stringify({
+          chat_id: '<YOUR_CHAT_ID>',
+          text: message,
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: buttons }
+        });
+
+        return { message, requestBody };
       };
       ```
-   4. **Telegram send** — Parse Mode **`HTML`**, Message field = *only* the Code step's
-      `message` output (a single inserted variable, nothing else typed around it).
+      Replace `<YOUR_CHAT_ID>` with your own chat id from Setup step 2.
+   4. **Custom API Call** (Telegram Bot piece) — not the packaged "Send Text Message"
+      action. Method `POST`, URL `/sendMessage`, Header `Content-Type: application/json`,
+      Body Type `JSON`, and the JSON Body field = *only* the Code step's `requestBody`
+      output (a single inserted variable, nothing else typed around it).
 
-   **Why not simpler?** Telegram's `MarkdownV2` parse mode looks tempting for bold text,
-   but it requires escaping ~20 reserved characters (`. - ( ) ! ...`) in *any* dynamic
-   text — and email subjects/bodies can contain literally anything, so it breaks
-   constantly. `HTML` mode only reserves `& < >`, which the Code step escapes safely.
-   Skipping the Code step and building the message directly in the Telegram field works
-   too, but then you're back to plain, unformatted text with no safe way to add bold or
-   a link.
+   **Why the detour through Custom API Call?** The packaged "Send Text Message" action's
+   Reply Markup field doesn't actually forward inline keyboards to Telegram in this piece
+   version — buttons silently never appear, with no error. Hitting Telegram's
+   `sendMessage` endpoint directly via Custom API Call (auth still handled automatically
+   by the existing Connection) sends the exact same request Telegram's docs describe, and
+   the buttons work.
+
+   **Why not `MarkdownV2` for the text formatting?** It requires escaping ~20 reserved
+   characters (`. - ( ) ! ...`) in *any* dynamic text — email content can contain any of
+   them, so it breaks constantly. `HTML` mode only reserves `& < >`, which the Code step
+   escapes safely.
 
    **Meetings** — Schedule (5 min) → Get Calendar events (next 20 min) → Loop over
    events → inside the loop: Storage *Get*(event id) → skip if already set → Telegram
@@ -125,3 +186,7 @@ Track progress with [`SETUP.md`](SETUP.md) — the same steps below, as a checkl
   call if some of yours don't land on your calendar.
 - The Ask flow answers from a fixed 7-day window, not a real search — fine for "what's
   coming up," not for searching further back.
+- The email flow's **"Remind Me" and "Mark Done" buttons currently do nothing when
+  tapped** — they render correctly, but nothing is listening for the button press yet.
+  Making them functional needs a second flow (Telegram `callback_query` trigger →
+  branch on the button pressed → act) — not built yet.
